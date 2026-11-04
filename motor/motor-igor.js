@@ -11,8 +11,8 @@
    ===================================================================== */
 const W = 1920, H = 1080;
 const REC = /[?&]rec=1\b/.test(location.search), MINI = /[?&]tlprev=1\b/.test(location.search);
-/* prévia (navegador/túnel): clipes leves de media-previa/ quando o montador gerou (window.PROXY); gravação usa sempre media/ */
-const MEDIA = (!REC && window.PROXY) ? 'media-previa/' : 'media/';
+/* QUALIDADE INTEIRA sempre (regra inegociável do Igor, 04/11/2026): prévia e gravação usam os mesmos clipes 1080p de media/ */
+const MEDIA = 'media/';
 const PAL = window.PAL || [], FR = window.FRASES || [];
 const stage = document.getElementById('stage'), cam = document.getElementById('cam');
 let root = cam;
@@ -126,8 +126,7 @@ function preto(tl, t0, t1) { const b = $('div', 'abs', root, { inset: 0, backgro
 /* ---------- áudio: voz = relógio ---------- */
 const somFalso = () => ({ paused: true, seeking: false, currentTime: 0, muted: true, volume: 0, playbackRate: 1, src: '', play() { return Promise.resolve(); }, pause() {} });
 const mkAudio = (src, pre) => { if (MINI) return somFalso(); const a = new Audio(); a.preload = REC ? 'auto' : pre; a.src = src; return a; };
-/* prévia: áudios leves de previa-audio/ (o montador gera); gravação usa os originais */
-const AUD = (!REC && window.PROXY) ? 'previa-audio/' : '';
+const AUD = '';   // áudio original sempre (sem versão leve)
 const audio = mkAudio(AUD + 'narracao.mp3', 'metadata');
 const musica = mkAudio(AUD + 'musica.mp3', 'none'); let musOn = true;
 const sfx = mkAudio(AUD + 'sfx.mp3', 'none'); let sfxOn = true;
