@@ -1,0 +1,118 @@
+name: Renderizar vídeo
+
+# Renderiza um vídeo HTML do GTA-Studio em MP4 1920x1080 (30 fps), em partes paralelas.
+# A mídia pesada (clipes, memes, áudios) fica num zip anexado a uma Release (input "midia"), extraído na raiz do repositório.
+on:
+  workflow_dispatch:
+    inputs:
+      video:
+        description: "Pasta do vídeo (tem index.html)"
+        default: "videos/003-habitos-gta6/v3"
+      midia:
+        description: "Tag da Release com midia.zip"
+        default: "midia-003-v3"
+      partes:
+        description: "Partes em paralelo (máx. 20)"
+        default: "16"
+      crf:
+        description: "Qualidade x264 (menor = melhor; 16 já é excelente)"
+        default: "16"
+      preset:
+        description: "Preset x264 (medium = equilíbrio; slow = mais lento)"
+        default: "medium"
+
+permissions:
+  contents: write
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  TMP_TAG: render-tmp-${{ github.run_id }}
+
+jobs:
+  planeja:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      matriz: ${{ steps.p.outputs.matriz }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Dependências
+        run: |
+          pip install --quiet playwright
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg > /dev/null
+          google-chrome --version
+      - name: Mídia
+        run: gh release download "${{ inputs.midia }}" -p midia.zip && unzip -q midia.zip && rm midia.zip
+      - name: Planeja as partes
+        id: p
+        run: |
+          M=$(python -X utf8 motor/render_gh.py planeja "${{ inputs.video }}/index.html" "${{ inputs.partes }}" | tail -1)
+          echo "$M"
+          echo "matriz=$M" >> "$GITHUB_OUTPUT"
+      - name: Release temporária para as partes
+        run: gh release create "$TMP_TAG" --prerelease --title "partes $TMP_TAG (temporário)" --notes "apagada ao fim do render"
+
+  render:
+    needs: planeja
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        parte: ${{ fromJSON(needs.planeja.outputs.matriz) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Dependências
+        run: |
+          pip install --quiet playwright
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg > /dev/null
+      - name: Mídia
+        run: gh release download "${{ inputs.midia }}" -p midia.zip && unzip -q midia.zip && rm midia.zip
+      - name: Renderiza a parte ${{ matrix.parte.i }} (quadros ${{ matrix.parte.f0 }}–${{ matrix.parte.f1 }})
+        env:
+          RENDER_CRF: ${{ inputs.crf }}
+          RENDER_PRESET: ${{ inputs.preset }}
+        run: |
+          N=$(printf "p%02d" ${{ matrix.parte.i }})
+          for tentativa in 1 2 3; do
+            python -X utf8 motor/renderiza.py "${{ inputs.video }}/index.html" --_trabalhador --fps 30 --de 0 \
+              --f0 ${{ matrix.parte.f0 }} --f1 ${{ matrix.parte.f1 }} --saida "$N.mp4" --status "$N.json" --partes 1 --formato jpeg && break
+            echo "tentativa $tentativa falhou"; [ $tentativa = 3 ] && exit 1
+          done
+          ffprobe -v error -show_entries format=duration -of csv=p=0 "$N.mp4"
+          gh release upload "$TMP_TAG" "$N.mp4" --clobber
+
+  junta:
+    needs: [planeja, render]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Dependências
+        run: |
+          pip install --quiet playwright
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg > /dev/null
+      - name: Mídia (áudios)
+        run: gh release download "${{ inputs.midia }}" -p midia.zip && unzip -q midia.zip && rm midia.zip
+      - name: Baixa as partes
+        run: gh release download "$TMP_TAG" -p "p*.mp4" -D partes && ls -la partes
+      - name: Junta + áudio
+        run: |
+          NOME=$(echo "${{ inputs.video }}" | tr '/' '_' | sed 's/^videos_//')
+          python -X utf8 motor/render_gh.py junta "${{ inputs.video }}/index.html" partes "saida/${NOME}.mp4"
+          ffprobe -v error -show_entries format=duration:stream=codec_name,width,height,channels -of compact "saida/${NOME}.mp4"
+          echo "NOME=$NOME" >> "$GITHUB_ENV"
+      - name: Publica o MP4 numa Release
+        run: |
+          gh release create "video-${NOME}-${{ github.run_number }}" "saida/${NOME}.mp4" \
+            --title "${NOME} · render #${{ github.run_number }}" --notes "Render automático (${{ inputs.partes }} partes, crf ${{ inputs.crf }}, ${{ inputs.preset }})."
+      - name: Apaga a release temporária
+        if: always()
+        run: gh release delete "$TMP_TAG" --yes --cleanup-tag || true
