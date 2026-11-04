@@ -11,7 +11,8 @@
    ===================================================================== */
 const W = 1920, H = 1080;
 const REC = /[?&]rec=1\b/.test(location.search), MINI = /[?&]tlprev=1\b/.test(location.search);
-const MEDIA = 'media/';
+/* prévia (navegador/túnel): clipes leves de media-previa/ quando o montador gerou (window.PROXY); gravação usa sempre media/ */
+const MEDIA = (!REC && window.PROXY) ? 'media-previa/' : 'media/';
 const PAL = window.PAL || [], FR = window.FRASES || [];
 const stage = document.getElementById('stage'), cam = document.getElementById('cam');
 let root = cam;
@@ -53,7 +54,7 @@ let CAM_F = null;   // camada de fundos da cena (embaixo de tudo)
 const B = (id, nome, fn) => BEATS.push({
   de: F(id), nome, id,
   clipes: [...new Set((String(fn).match(/'([\w\-]+\.mp4)'/g) || []).map(s => s.slice(1, -1)))],
-  build(w, D) { const tl = gsap.timeline(); CAM_F = $('div', 'abs', root, { inset: 0, overflow: 'hidden', background: '#000' }); fn(tl, w, D); return tl; }
+  build(w, D) { const tl = gsap.timeline(); CAM_F = $('div', 'abs', root, { inset: 0, overflow: 'hidden', background: '#000' }); CAM_F.dataset.fundo = '1'; fn(tl, w, D); return tl; }
 });
 
 /* fundo em tela cheia, limpo, com zoom lento (Ken Burns) — uma passada do clipe, sem voltar ao começo */
@@ -92,6 +93,30 @@ function cheio(tl, src, t0, t1, o = {}) {
   }
   return box;
 }
+/* verificador (motor/verifica_video.py): janelas de cada clipe + buracos sem imagem que não são preto proposital */
+function diagnostico(passo = .25) {
+  const jan = [], buracos = [];
+  const pretoProposital = () => [...root.querySelectorAll('div')].some(e => {
+    if (e.dataset.fundo) return false;
+    const cs = getComputedStyle(e); if (cs.visibility === 'hidden' || +cs.opacity < .5) return false;
+    let p = e; while (p && p !== root) { const c = getComputedStyle(p); if (c.visibility === 'hidden' || +c.opacity < .05 || c.display === 'none') return false; p = p.parentElement; }
+    const bg = cs.backgroundColor; if (!(bg === 'rgb(0, 0, 0)' || bg.startsWith('rgba(0, 0, 0, 0.5'))) return false;
+    const r = e.getBoundingClientRect(), s = stage.getBoundingClientRect(); return r.width >= s.width * .98 && r.height >= s.height * .98;
+  });
+  for (let i = 0; i < BEATS.length; i++) {
+    montaBeat(i); const b = BEATS[i], D = b.ate - b.de;
+    for (const o of VIDS) jan.push({ cena: i + 1, id: b.id, src: o.v.getAttribute('src'), t0: +(b.de + o.t0).toFixed(2), t1: +(b.de + Math.min(o.t1, D)).toFixed(2), ini: o.ini, rate: o.rate });
+    let ini = null;
+    for (let t = 0; t < D; t += passo) {
+      btl.time(Math.min(t, btl.duration()), false);
+      const temVideo = VIDS.some(o => t >= o.t0 && t < o.t1 && getComputedStyle(o.v).visibility !== 'hidden');
+      const ok = temVideo || pretoProposital();
+      if (!ok && ini === null) ini = t;
+      if ((ok || t + passo >= D) && ini !== null) { if (t - ini >= .3) buracos.push({ cena: i + 1, id: b.id, nome: b.nome, de: +(b.de + ini).toFixed(2), ate: +(b.de + t).toFixed(2) }); ini = null; }
+    }
+  }
+  curB = -1; return { jan, buracos };
+}
 function planejaFill() { for (let i = 0; i < BEATS.length; i++) montaBeat(i); curB = -1; return PLAN_FILL; }
 /* sequência de planos [[src, t, ini?, opções?], ...] até 'fim' */
 function seq(tl, planos, fim, o = {}) { planos.forEach((p, i) => cheio(tl, p[0], p[1], i < planos.length - 1 ? planos[i + 1][1] : fim, Object.assign({ ini: p[2] || 0 }, o, p[3] || {}))); }
@@ -101,9 +126,11 @@ function preto(tl, t0, t1) { const b = $('div', 'abs', root, { inset: 0, backgro
 /* ---------- áudio: voz = relógio ---------- */
 const somFalso = () => ({ paused: true, seeking: false, currentTime: 0, muted: true, volume: 0, playbackRate: 1, src: '', play() { return Promise.resolve(); }, pause() {} });
 const mkAudio = (src, pre) => { if (MINI) return somFalso(); const a = new Audio(); a.preload = REC ? 'auto' : pre; a.src = src; return a; };
-const audio = mkAudio('narracao.mp3', 'metadata');
-const musica = mkAudio('musica.mp3', 'none'); let musOn = true;
-const sfx = mkAudio('sfx.mp3', 'none'); let sfxOn = true;
+/* prévia: áudios leves de previa-audio/ (o montador gera); gravação usa os originais */
+const AUD = (!REC && window.PROXY) ? 'previa-audio/' : '';
+const audio = mkAudio(AUD + 'narracao.mp3', 'metadata');
+const musica = mkAudio(AUD + 'musica.mp3', 'none'); let musOn = true;
+const sfx = mkAudio(AUD + 'sfx.mp3', 'none'); let sfxOn = true;
 let legOn = false;
 const TOTAL = +(FR[FR.length - 1].fim + 5.5).toFixed(2);   // respiro final: gatinho + escurecimento + fade da música
 
@@ -121,10 +148,24 @@ function prepara() {
 function fit() { const vp = document.getElementById('viewport'); const k = vp.clientWidth / W; stage.style.transform = `scale(${k})`; vp.style.height = H * k + 'px'; }
 addEventListener('resize', fit);
 function beatAt(t) { let i = 0; for (let k = 0; k < BEATS.length; k++) if (t >= BEATS[k].de) i = k; return i; }
+/* carregamento: na gravação, cena atual + seguinte; na prévia, FILA EM ORDEM — primeiro os clipes da cena atual,
+   depois as próximas cenas, no máximo 2 baixando ao mesmo tempo (antes: tudo junto → o clipe da tela atrasava) */
+const AQUECE_N = 6; let FILA = [];
+const carrega = v => { if (v.preload !== 'auto') { v.preload = 'auto'; if (v.readyState === 0 && v.networkState !== 2) v.load(); } };
+const pronto = v => v.readyState >= 4 || (v.readyState >= 3 && v.buffered.length && v.buffered.end(v.buffered.length - 1) >= (v.duration || 99) - .3);
 function aquece(i) {
-  for (const k of [i, i + 1]) { const b = BEATS[k]; if (!b || (MINI && k > i)) continue;
-    for (const n of b.clipes) { const v = vel(n); if (v.preload !== 'auto') { v.preload = 'auto'; if (v.readyState === 0 && v.networkState !== 2) v.load(); } } }
+  if (REC || MINI) { for (const k of [i, i + 1]) { const b = BEATS[k]; if (!b || (MINI && k > i)) continue; for (const n of b.clipes) carrega(vel(n)); } return; }
+  for (const n of BEATS[i].clipes) carrega(vel(n));
+  FILA = []; for (let k = i + 1; k <= i + AQUECE_N && k < BEATS.length; k++) for (const n of BEATS[k].clipes) FILA.push(n);
 }
+function andaFila() {
+  if (REC || MINI || curB < 0) return;
+  if (!BEATS[curB].clipes.every(n => pronto(vel(n)) || vel(n).networkState === 3)) return;   // a tela atual primeiro
+  let baixando = 0;
+  for (const n of FILA) { const v = vel(n); if (v.preload === 'auto' && !pronto(v) && v.networkState !== 3) baixando++; }
+  for (const n of FILA) { if (baixando >= 2) break; const v = vel(n); if (v.preload !== 'auto') { carrega(v); baixando++; } }
+}
+if (!REC && !MINI) setInterval(andaFila, 300);
 function montaBeat(i) {
   aquece(i);
   gsap.globalTimeline.getChildren(false, true, true).forEach(c => { if (!c.data || c.data !== 'fixo') c.kill(); });
@@ -138,9 +179,33 @@ function montaBeat(i) {
 const nFrase = document.getElementById('nFrase'); let frAtual;
 function frase(t) { if (!nFrase) return; if (frAtual && t >= frAtual.inicio - .05 && t < frAtual.fim + .3) return; const f = FR.find(f => t >= f.inicio - .05 && t < f.fim + .3) || null; if (f !== frAtual) { frAtual = f; nFrase.textContent = f ? `${f.id} · ${f.texto}` : '—'; } }
 let tempoTxt = '';
+/* ---------- espera de carregamento (prévia): se um clipe da tela ainda não tem imagem, o relógio PARA e espera,
+   em vez de mostrar tela preta / quadro congelado. Log em window.ESPERAS (o verificador lê). ---------- */
+let esperando = false, espDesde = 0, espMotivo = ''; window.ESPERAS = [];
+let spin = null;
+function mostraSpin(on) {
+  if (!spin) { spin = document.createElement('div'); Object.assign(spin.style, { position: 'absolute', right: '28px', bottom: '24px', zIndex: 80, padding: '8px 18px', borderRadius: '999px', background: 'rgba(0,0,0,.6)', color: '#fff', font: "700 26px 'Barlow Condensed',sans-serif", letterSpacing: '.06em', pointerEvents: 'none' }); spin.textContent = 'carregando…'; stage.appendChild(spin); }
+  spin.style.display = on ? 'block' : 'none';
+}
+function faltaCarregar() {
+  if (REC || MINI || curB < 0) return '';
+  const rel = clock - BEATS[curB].de;
+  for (const o of VIDS) if (rel >= o.t0 - .05 && rel < o.t1 && o.v.readyState < 3) return o.v.src.split('/').pop();
+  if (audio.readyState < 3 && !audio.ended) return 'narracao.mp3';
+  return '';
+}
 function tick() {
   const now = performance.now(); let dt = (now - lastNow) / 1000; lastNow = now; if (dt > .25) dt = .25;
-  if (playing) {
+  if (playing && !REC && !MINI) {
+    const f = faltaCarregar();
+    if (f && !esperando) { esperando = true; espDesde = now; espMotivo = f; for (const a of [audio, musica, sfx]) a.pause(); mostraSpin(true); }
+    else if (esperando && (!f || now - espDesde > 12000)) {
+      window.ESPERAS.push({ t: +clock.toFixed(2), s: +((now - espDesde) / 1000).toFixed(2), clipe: espMotivo });
+      esperando = false; mostraSpin(false); lastNow = now; dt = 0;
+      for (const a of [audio, musica, sfx]) { a.currentTime = clock; a.play().catch(() => {}); }
+    }
+  }
+  if (playing && !esperando) {
     clock += dt * rate;
     if (!audio.paused && !audio.seeking && Math.abs(audio.currentTime - clock) > .12) clock = audio.currentTime;
     const vozAcabou = audio.ended || (audio.duration && audio.currentTime >= audio.duration - .05);
@@ -151,10 +216,10 @@ function tick() {
   const i = beatAt(clock);
   if (i !== curB) montaBeat(i);
   btl.time(Math.min(Math.max(0, clock - BEATS[i].de), btl.duration()), false);
-  const rel = clock - BEATS[i].de;
+  const rel = clock - BEATS[i].de, ativo = playing && !esperando;
   for (const o of VIDS) {
     const dur = o.v.duration || 99, span = Math.max(.5, dur - o.ini - .12), loc = o.ini + (Math.max(0, rel - o.t0) * o.rate) % span, on = rel >= o.t0 - .1 && rel < o.t1;
-    if (on && playing) {
+    if (on && ativo) {
       /* tocando: posiciona só na entrada do trecho ou se atrasar muito; diferença pequena = acelera/freia de leve
          (antes: reposicionava a cada 0,25 s de diferença → milhares de pulos para trás, parecendo "loop") */
       const diff = loc - o.v.currentTime;
@@ -163,7 +228,7 @@ function tick() {
       o.v.playbackRate = Math.max(.0625, o.rate * rate * (1 + Math.max(-.25, Math.min(.25, diff * .5))));
       if (o.v.paused) o.v.play().catch(() => {});
     }
-    else if (playing) {
+    else if (ativo) {
       /* tocando, trecho fora da tela: o que já passou fica parado; o que vai entrar é posicionado UMA vez no começo */
       o.ok = false; if (!o.v.paused && !VIDS.some(x => x !== o && x.v === o.v && rel >= x.t0 - .1 && rel < x.t1)) o.v.pause();
       if (rel < o.t0 - .1 && !o.pre && !o.v.seeking && o.v.readyState > 0 && !VIDS.some(x => x !== o && x.v === o.v && rel >= x.t0 - .1 && rel < x.t1)) { o.pre = true; if (Math.abs(o.v.currentTime - o.ini) > .05) o.v.currentTime = o.ini; }
@@ -182,7 +247,7 @@ function toca() {
   audio.play().catch(e => console.warn('áudio:', e.message)); musica.play().catch(() => {}); sfx.play().catch(() => {});
   playing = true; bPlay.textContent = '⏸ Pausar'; if (capa) capa.classList.add('off');
 }
-function pausa() { playing = false; audio.pause(); musica.pause(); sfx.pause(); bPlay.textContent = '▶ Tocar'; }
+function pausa() { playing = false; if (esperando) { esperando = false; mostraSpin(false); } audio.pause(); musica.pause(); sfx.pause(); bPlay.textContent = '▶ Tocar'; }
 function vaiPara(t) { clock = Math.min(Math.max(0, t), TOTAL - .01); curB = -1; for (const a of [audio, musica, sfx]) a.currentTime = clock; if (playing) { audio.play().catch(() => {}); musica.play().catch(() => {}); sfx.play().catch(() => {}); } }
 
 function liga() {

@@ -10,7 +10,7 @@ on:
         default: "videos/003-habitos-gta6/v3"
       midia:
         description: "Tag da Release com midia.zip"
-        default: "midia-003-v3"
+        default: "midia-003-habitos-gta6-v3"
       partes:
         description: "Partes em paralelo (máx. 20)"
         default: "16"

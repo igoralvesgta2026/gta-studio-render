@@ -13,7 +13,10 @@ O MP4 final aparece em **Releases** (`video-<nome>-<n>`).
    As partes vão para uma release temporária.
 3. **junta**: `motor/render_gh.py junta` concatena as partes, mistura narração + música + efeitos (estéreo) e publica o MP4.
 
-## Vídeo novo
-- Código (index.html, *.js) em `videos/<pasta>/`, motor em `motor/` (mesma estrutura do GTA-Studio).
-- Mídia pesada: zip com `videos/<pasta>/media/`, `memes/` e os mp3, anexado como `midia.zip` numa release
-  (ex.: `gh release create midia-004 midia.zip`), e o nome dela vai no input **midia**.
+## Vídeo novo (processo padrão)
+No GTA-Studio, um comando faz tudo:
+```
+python -X utf8 scripts/render_github.py videos/<pasta-do-video> --esperar
+```
+Ele sincroniza `motor/` e o código do vídeo, envia a mídia como release `midia-<slug>` (só se mudou), dispara este
+workflow e, com `--esperar`, baixa o MP4 para `videos/<pasta>/render/`. Token em `.credenciais.env` (GITHUB_TOKEN=).
