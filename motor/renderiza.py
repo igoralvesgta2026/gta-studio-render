@@ -250,7 +250,8 @@ def fonte_audio(html):
 def nome_padrao(html):
     html = html.resolve()
     try:
-        rel = html.relative_to(RAIZ / "videos").parts
+        sys.path.insert(0, str(RAIZ / "motor")); import canais
+        rel = html.relative_to(canais.videos(canais.canal_de(html))).parts
         nome = "_".join(list(rel[:-1]) + ([] if html.stem == "index" else [html.stem]))
     except ValueError:
         nome = html.parent.name + ("" if html.stem == "index" else "_" + html.stem)

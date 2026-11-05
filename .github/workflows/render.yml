@@ -7,7 +7,7 @@ on:
     inputs:
       video:
         description: "Pasta do vídeo (tem index.html)"
-        default: "videos/003-habitos-gta6/v3"
+        default: "canais/igor-alves/videos/003-habitos-gta6/v3"
       midia:
         description: "Tag da Release com midia.zip"
         default: "midia-003-habitos-gta6-v3"
@@ -105,7 +105,7 @@ jobs:
         run: gh release download "$TMP_TAG" -p "p*.mp4" -D partes && ls -la partes
       - name: Junta + áudio
         run: |
-          NOME=$(echo "${{ inputs.video }}" | tr '/' '_' | sed 's/^videos_//')
+          NOME=$(echo "${{ inputs.video }}" | sed -E 's#^canais/igor-alves/videos/##; s#^canais/([^/]+)/videos/#\1/#; s#^videos/##' | tr '/' '_')
           python -X utf8 motor/render_gh.py junta "${{ inputs.video }}/index.html" partes "saida/${NOME}.mp4"
           ffprobe -v error -show_entries format=duration:stream=codec_name,width,height,channels -of compact "saida/${NOME}.mp4"
           echo "NOME=$NOME" >> "$GITHUB_ENV"
