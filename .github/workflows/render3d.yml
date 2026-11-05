@@ -1,0 +1,95 @@
+name: Renderizar vídeo 3D (Elaborando)
+
+# Renderiza o player video001-3d (motor Motor.renderEm) em MP4 1920x1080 30 fps, em partes paralelas.
+# midia3d.zip (Release do input "midia") traz a pasta estilo/ inteira (código do player + clipes, poses, fontes, sfx, narração).
+on:
+  workflow_dispatch:
+    inputs:
+      midia:
+        description: "Tag da Release com midia3d.zip"
+        default: "midia-elaborando-video001-3d"
+      quadros:
+        description: "Total de quadros (586,016 s x 30 = 17580)"
+        default: "17580"
+      partes:
+        description: "Partes em paralelo (máx. 20)"
+        default: "20"
+      nome:
+        description: "Nome do MP4"
+        default: "elaborando_video001-3d_1080p"
+
+permissions:
+  contents: write
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  TMP_TAG: render3d-tmp-${{ github.run_id }}
+  RENDER_ESTILO: ${{ github.workspace }}/estilo
+  RENDER_SERVIDOR: ${{ github.workspace }}/motor/servidor_range.py
+
+jobs:
+  planeja:
+    runs-on: ubuntu-latest
+    outputs:
+      matriz: ${{ steps.p.outputs.matriz }}
+    steps:
+      - id: p
+        run: |
+          M=$(python3 -c "import json,math;Q=${{ inputs.quadros }};N=${{ inputs.partes }};s=math.ceil(Q/N);print(json.dumps([{'i':k,'f0':k*s,'f1':min(Q,(k+1)*s)} for k in range(N) if k*s<Q]))")
+          echo "$M"; echo "matriz=$M" >> "$GITHUB_OUTPUT"
+          gh release create "$TMP_TAG" -R "$GITHUB_REPOSITORY" --prerelease --title "partes $TMP_TAG (temporário)" --notes "apagada ao fim do render"
+
+  render:
+    needs: planeja
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        parte: ${{ fromJSON(needs.planeja.outputs.matriz) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Dependências
+        run: |
+          pip install --quiet playwright
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg fonts-noto-color-emoji > /dev/null
+          google-chrome --version
+      - name: Mídia
+        run: gh release download "${{ inputs.midia }}" -p midia3d.zip && unzip -q midia3d.zip && rm midia3d.zip && du -sh estilo
+      - name: Renderiza a parte ${{ matrix.parte.i }} (quadros ${{ matrix.parte.f0 }}–${{ matrix.parte.f1 }})
+        run: |
+          ARQ="parte_$(printf %02d ${{ matrix.parte.i }})_${{ matrix.parte.f0 }}_${{ matrix.parte.f1 }}.mp4"
+          for tentativa in 1 2 3; do
+            python -X utf8 motor/renderiza_3d.py --_trab ${{ matrix.parte.f0 }} ${{ matrix.parte.f1 }} "$ARQ" && break
+            echo "tentativa $tentativa falhou"; [ $tentativa = 3 ] && exit 1
+          done
+          ffprobe -v error -show_entries format=duration -of csv=p=0 "$ARQ"
+          cat "$ARQ.sfx.json" | head -c 400; echo
+          gh release upload "$TMP_TAG" "$ARQ" "$ARQ.sfx.json" --clobber
+
+  junta:
+    needs: [planeja, render]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Dependências
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg > /dev/null
+      - name: Mídia (áudios)
+        run: gh release download "${{ inputs.midia }}" -p midia3d.zip && unzip -q midia3d.zip "estilo/sfx/*" "estilo/video001/narracao_v2.mp3" && rm midia3d.zip
+      - name: Baixa as partes
+        run: gh release download "$TMP_TAG" -D partes && ls -la partes
+      - name: Junta + áudio
+        run: |
+          python3 -X utf8 motor/renderiza_3d.py --junta partes --saida "saida/${{ inputs.nome }}.mp4"
+          ffprobe -v error -show_entries format=duration:stream=codec_name,width,height,r_frame_rate,channels -of compact "saida/${{ inputs.nome }}.mp4"
+      - name: Publica o MP4 numa Release
+        run: |
+          gh release create "video-${{ inputs.nome }}-${{ github.run_number }}" "saida/${{ inputs.nome }}.mp4" \
+            --title "${{ inputs.nome }} · render #${{ github.run_number }}" --notes "Render automático (${{ inputs.partes }} partes)."
+      - name: Apaga a release temporária
+        if: always()
+        run: gh release delete "$TMP_TAG" --yes --cleanup-tag || true
