@@ -46,7 +46,7 @@ def junta(html, pasta, saida, fps=30):
     for p in auds: cmd += ["-i", str(p)]
     if len(auds) > 1:
         ent = "".join(f"[{i + 1}:a]" for i in range(len(auds)))
-        cmd += ["-filter_complex", f"{ent}amix=inputs={len(auds)}:normalize=0:duration=longest,apad[a]", "-map", "0:v", "-map", "[a]"]
+        cmd += ["-filter_complex", f"{ent}amix=inputs={len(auds)}:normalize=0:duration=longest,alimiter=limit=0.89:attack=5:release=60:level=0:latency=1,apad[a]", "-map", "0:v", "-map", "[a]"]
     elif auds:
         cmd += ["-filter_complex", "[1:a]apad[a]", "-map", "0:v", "-map", "[a]"]
     if auds: cmd += ["-c:a", "aac", "-b:a", "320k", "-ar", "48000", "-ac", "2"]

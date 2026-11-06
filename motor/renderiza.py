@@ -174,6 +174,8 @@ def abre_pagina(pw, html, W, H):
     time.sleep(1.2)          # imagens de fundo / clipes começam a carregar
     info = page.evaluate(f"__R.prepara({W},{H})")
     page.evaluate("document.fonts.ready.then(()=>1)")
+    # Shorts (motor-short.js): espera o ajuste de margem dos textos (só existe nessa página; vídeos longos seguem direto)
+    page.evaluate("new Promise(ok => { let n = 0; (function f() { if (!window.ajustaTextos || window.__textosAjustados || n++ > 200) ok(1); else setTimeout(f, 50); })(); })")
     return browser, page, info
 
 
@@ -349,7 +351,7 @@ def principal(a):
         for p in auds: cmd += ["-ss", f"{de:.3f}", "-t", f"{dur:.3f}", "-i", str(p)]
         if len(auds) > 1:
             ent = "".join(f"[{i + 1}:a]" for i in range(len(auds)))
-            cmd += ["-filter_complex", f"{ent}amix=inputs={len(auds)}:normalize=0:duration=longest,apad[a]", "-map", "0:v", "-map", "[a]"]
+            cmd += ["-filter_complex", f"{ent}amix=inputs={len(auds)}:normalize=0:duration=longest,alimiter=limit=0.89:attack=5:release=60:level=0:latency=1,apad[a]", "-map", "0:v", "-map", "[a]"]
         elif auds:
             cmd += ["-filter_complex", "[1:a]apad[a]", "-map", "0:v", "-map", "[a]"]
         if auds: cmd += ["-c:a", "aac", "-b:a", "320k", "-ar", "48000", "-ac", "2"]
