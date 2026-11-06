@@ -42,6 +42,7 @@ def trabalhador(f0, f1, fps, saida, crf, preset, status):
     args = ["--mute-audio", "--hide-scrollbars", "--force-color-profile=srgb", "--disable-background-timer-throttling",
             "--disable-renderer-backgrounding", "--disable-backgrounding-occluded-windows"]
     ff = subprocess.Popen([FFMPEG, "-y", "-loglevel", "error", "-f", "image2pipe", "-c:v", "mjpeg", "-framerate", str(fps), "-i", "-",
+                           "-vf", "scale=out_range=tv:out_color_matrix=bt709", "-color_range", "tv",
                            "-c:v", "libx264", "-crf", str(crf), "-preset", preset, "-pix_fmt", "yuv420p",
                            "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709", "-r", str(fps), str(saida)],
                           stdin=subprocess.PIPE)
