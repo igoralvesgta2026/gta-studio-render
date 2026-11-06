@@ -17,6 +17,9 @@ on:
       nome:
         description: "Nome do MP4"
         default: "elaborando_video001-3d_1080p"
+      clipes:
+        description: "Tag da Release com clipes-hq-*.zip (vazio = usa os clipes 720p da mídia)"
+        default: ""
 
 permissions:
   contents: write
@@ -53,12 +56,23 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
       - name: Dependências
+        timeout-minutes: 20
         run: |
           pip install --quiet playwright
-          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg fonts-noto-color-emoji > /dev/null
+          for t in 1 2 3; do timeout 240 sudo apt-get update -qq && timeout 300 sudo apt-get install -y -qq ffmpeg fonts-noto-color-emoji > /dev/null && break; echo "apt tentativa $t falhou"; [ $t = 3 ] && exit 1; done
           google-chrome --version
       - name: Mídia
+        timeout-minutes: 15
         run: gh release download "${{ inputs.midia }}" -p midia3d.zip && unzip -q midia3d.zip && rm midia3d.zip && du -sh estilo
+      - name: Clipes HQ (troca os 720p e refaz os sem HUD)
+        if: inputs.clipes != ''
+        timeout-minutes: 25
+        run: |
+          mkdir -p hq && gh release download "${{ inputs.clipes }}" -p "clipes-hq-*.zip" -D hq
+          for z in hq/*.zip; do unzip -q -o "$z" -d estilo/video001/clipes; done; rm -rf hq
+          ls estilo/video001/clipes | wc -l
+          ffprobe -v error -select_streams v -show_entries stream=width,height -of csv=p=0 "$(ls estilo/video001/clipes/*.mp4 | head -1)"
+          python3 motor/sem_hud.py
       - name: Renderiza a parte ${{ matrix.parte.i }} (quadros ${{ matrix.parte.f0 }}–${{ matrix.parte.f1 }})
         run: |
           ARQ="parte_$(printf %02d ${{ matrix.parte.i }})_${{ matrix.parte.f0 }}_${{ matrix.parte.f1 }}.mp4"
@@ -77,7 +91,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Dependências
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg > /dev/null
+        timeout-minutes: 20
+        run: for t in 1 2 3; do timeout 240 sudo apt-get update -qq && timeout 300 sudo apt-get install -y -qq ffmpeg > /dev/null && break; [ $t = 3 ] && exit 1; done
       - name: Mídia (áudios)
         run: gh release download "${{ inputs.midia }}" -p midia3d.zip && unzip -q midia3d.zip "estilo/sfx/*" "estilo/video001/narracao_v2.mp3" && rm midia3d.zip
       - name: Baixa as partes
