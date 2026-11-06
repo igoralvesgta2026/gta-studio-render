@@ -39,9 +39,10 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
       - name: Dependências
+        timeout-minutes: 20
         run: |
           pip install --quiet playwright
-          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg > /dev/null
+          for t in 1 2 3; do timeout 240 sudo apt-get update -qq && timeout 300 sudo apt-get install -y -qq ffmpeg > /dev/null && break; echo "apt tentativa $t falhou"; [ $t = 3 ] && exit 1; done
           google-chrome --version
       - name: Mídia
         run: gh release download "${{ inputs.midia }}" -p midia.zip && unzip -q midia.zip && rm midia.zip
@@ -68,9 +69,10 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
       - name: Dependências
+        timeout-minutes: 20
         run: |
           pip install --quiet playwright
-          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg > /dev/null
+          for t in 1 2 3; do timeout 240 sudo apt-get update -qq && timeout 300 sudo apt-get install -y -qq ffmpeg > /dev/null && break; echo "apt tentativa $t falhou"; [ $t = 3 ] && exit 1; done
       - name: Mídia
         run: gh release download "${{ inputs.midia }}" -p midia.zip && unzip -q midia.zip && rm midia.zip
       - name: Renderiza a parte ${{ matrix.parte.i }} (quadros ${{ matrix.parte.f0 }}–${{ matrix.parte.f1 }})
@@ -96,9 +98,10 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
       - name: Dependências
+        timeout-minutes: 20
         run: |
           pip install --quiet playwright
-          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg > /dev/null
+          for t in 1 2 3; do timeout 240 sudo apt-get update -qq && timeout 300 sudo apt-get install -y -qq ffmpeg > /dev/null && break; echo "apt tentativa $t falhou"; [ $t = 3 ] && exit 1; done
       - name: Mídia (áudios)
         run: gh release download "${{ inputs.midia }}" -p midia.zip && unzip -q midia.zip && rm midia.zip
       - name: Baixa as partes
