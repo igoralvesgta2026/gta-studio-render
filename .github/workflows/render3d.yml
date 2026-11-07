@@ -17,6 +17,9 @@ on:
       nome:
         description: "Nome do MP4"
         default: "elaborando_video001-3d_1080p"
+      video:
+        description: "Pasta do vídeo em estilo/ (video001, video002…); a duração vem de RENDER_DUR=quadros/30"
+        default: "video001"
       clipes:
         description: "Tag da Release com clipes-hq-*.zip (vazio = usa os clipes 720p da mídia)"
         default: ""
@@ -29,6 +32,7 @@ env:
   TMP_TAG: render3d-tmp-${{ github.run_id }}
   RENDER_ESTILO: ${{ github.workspace }}/estilo
   RENDER_SERVIDOR: ${{ github.workspace }}/motor/servidor_range.py
+  RENDER_VIDEO: ${{ inputs.video }}
 
 jobs:
   planeja:
@@ -94,12 +98,12 @@ jobs:
         timeout-minutes: 20
         run: for t in 1 2 3; do timeout 240 sudo apt-get update -qq && timeout 300 sudo apt-get install -y -qq ffmpeg > /dev/null && break; [ $t = 3 ] && exit 1; done
       - name: Mídia (áudios)
-        run: gh release download "${{ inputs.midia }}" -p midia3d.zip && unzip -q midia3d.zip "estilo/sfx/*" "estilo/video001/narracao_v2.mp3" && rm midia3d.zip
+        run: gh release download "${{ inputs.midia }}" -p midia3d.zip && unzip -q midia3d.zip "estilo/sfx/*" "estilo/${{ inputs.video }}/*.mp3" && rm midia3d.zip
       - name: Baixa as partes
         run: gh release download "$TMP_TAG" -D partes && ls -la partes
       - name: Junta + áudio
         run: |
-          python3 -X utf8 motor/renderiza_3d.py --junta partes --saida "saida/${{ inputs.nome }}.mp4"
+          RENDER_DUR=$(python3 -c "print(${{ inputs.quadros }}/30)") python3 -X utf8 motor/renderiza_3d.py --junta partes --saida "saida/${{ inputs.nome }}.mp4"
           ffprobe -v error -show_entries format=duration:stream=codec_name,width,height,r_frame_rate,channels -of compact "saida/${{ inputs.nome }}.mp4"
       - name: Publica o MP4 numa Release
         run: |

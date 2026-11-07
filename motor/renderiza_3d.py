@@ -12,17 +12,18 @@ import argparse, base64, json, math, os, shutil, socket, subprocess, sys, time, 
 from pathlib import Path
 
 ESTILO = Path(os.environ.get("RENDER_ESTILO") or Path(__file__).resolve().parents[1] / "canais" / "elaborando-gta" / "estilo")
-PASTA = ESTILO / "video001-3d"
+VIDEO = os.environ.get("RENDER_VIDEO") or "video001"          # 002 em diante: RENDER_VIDEO=video002
+PASTA = ESTILO / f"{VIDEO}-3d"
 SERVIDOR = Path(os.environ.get("RENDER_SERVIDOR") or r"E:\Projetos\Alves Academy\GTA-Studio\scripts\servidor_range.py")
 PORTA = 3930
-URL = f"http://localhost:{PORTA}/video001-3d/index.html"
+URL = f"http://localhost:{PORTA}/{VIDEO}-3d/index.html"
 FFMPEG = shutil.which("ffmpeg") or "ffmpeg"
-DUR = 586.016
+DUR = float(os.environ.get("RENDER_DUR") or 586.016)
 
 
 def servidor_no_ar():
     try:
-        urllib.request.urlopen(f"http://localhost:{PORTA}/video001-3d/SPEC.md", timeout=3); return True
+        urllib.request.urlopen(f"http://localhost:{PORTA}/{VIDEO}-3d/index.html", timeout=3); return True
     except Exception:
         return False
 
@@ -73,7 +74,8 @@ def trabalhador(f0, f1, fps, saida, crf, preset, status):
 
 
 def mixa_audio(sfx, de, ate, saida):
-    narr = ESTILO / "video001" / "narracao_v2.mp3"
+    narr = ESTILO / VIDEO / ("narracao_v2.mp3" if VIDEO == "video001" else "narracao.mp3")
+    musica = ESTILO / VIDEO / "musica.mp3"   # 002+: trilha já no nível final (−31 LUFS, constante)
     eventos = []
     for abs_, nome, vol, a, b in sfx:
         if not (a - 0.25 < abs_ < b): continue          # mesma janela do player (toca ao cruzar, dentro do bloco atual)
@@ -82,7 +84,10 @@ def mixa_audio(sfx, de, ate, saida):
     eventos.sort()
     ins = ["-ss", f"{de:.3f}", "-t", f"{ate - de:.3f}", "-i", str(narr)]
     filt, rot = [], ["[0:a]"]
-    for k, (t, nome, vol) in enumerate(eventos, 1):
+    k0 = 1
+    if musica.exists():
+        ins += ["-ss", f"{de:.3f}", "-t", f"{ate - de:.3f}", "-i", str(musica)]; rot.append("[1:a]"); k0 = 2
+    for k, (t, nome, vol) in enumerate(eventos, k0):
         ins += ["-i", str(ESTILO / "sfx" / f"{nome.replace('.mp3', '')}.mp3")]
         ms = int(round(t * 1000))
         filt.append(f"[{k}:a]volume={vol:.3f},adelay={ms}|{ms}[s{k}]"); rot.append(f"[s{k}]")
