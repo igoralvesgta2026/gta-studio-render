@@ -93,8 +93,11 @@ def mixa_audio(sfx, de, ate, saida):
         filt.append(f"[{k}:a]volume={vol:.3f},adelay={ms}|{ms}[s{k}]"); rot.append(f"[s{k}]")
     filt.append(f"{''.join(rot)}amix=inputs={len(rot)}:normalize=0:duration=first[a]")
     fc = Path(str(saida) + ".filtro.txt"); fc.write_text(";".join(filt), encoding="utf-8")
-    subprocess.run([FFMPEG, "-y", "-loglevel", "error", *ins, "-filter_complex_script", str(fc), "-map", "[a]",
-                    "-c:a", "pcm_s16le", "-ar", "48000", str(saida)], check=True)
+    cauda = ["-map", "[a]", "-c:a", "pcm_s16le", "-ar", "48000", str(saida)]
+    # ffmpeg ≥ 7 trocou -filter_complex_script por -/filter_complex (o 9 do PC do Igor já não aceita o antigo)
+    r = subprocess.run([FFMPEG, "-y", "-loglevel", "error", *ins, "-/filter_complex", str(fc), *cauda])
+    if r.returncode:
+        subprocess.run([FFMPEG, "-y", "-loglevel", "error", *ins, "-filter_complex_script", str(fc), *cauda], check=True)
     return len(eventos)
 
 
