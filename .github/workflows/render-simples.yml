@@ -30,7 +30,7 @@ jobs:
           pip install -q pillow
       - name: mídia
         run: |
-          gh release download "${{ inputs.midia }}" -p midia.zip -D /tmp
+          gh release download "${{ inputs.midia }}" -p "*.zip" -D /tmp && mv /tmp/*.zip /tmp/midia.zip
           mkdir -p /tmp/w && cd /tmp/w && unzip -q /tmp/midia.zip
       - name: montar
         run: |
