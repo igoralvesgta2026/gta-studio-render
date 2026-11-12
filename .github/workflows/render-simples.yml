@@ -1,0 +1,42 @@
+name: Renderizar vídeo simples (fotos + narração)
+
+# Formato simples do Where Legends Lived: montar_simples.py (ffmpeg, fotos com zoom + filtro quente + narração + trilha).
+# A Release "midia" traz midia.zip com: montar_simples.py, <pasta>/roteiro, voz/narracao.mp3, editor/palavras.json, plano.json, imagens/, musica/trilha.wav.
+on:
+  workflow_dispatch:
+    inputs:
+      midia:
+        description: "Tag da Release com midia.zip"
+        required: true
+      pasta:
+        description: "Nome da pasta do vídeo dentro do zip"
+        required: true
+
+permissions:
+  contents: write
+
+env:
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: ffmpeg + pillow
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          pip install -q pillow
+      - name: mídia
+        run: |
+          gh release download "${{ inputs.midia }}" -p midia.zip -D /tmp
+          mkdir -p /tmp/w && cd /tmp/w && unzip -q /tmp/midia.zip
+      - name: montar
+        run: |
+          cd /tmp/w
+          python montar_simples.py "${{ inputs.pasta }}" --workers 4
+      - name: publicar
+        run: |
+          f=$(ls /tmp/w/${{ inputs.pasta }}/render/*_final.mp4)
+          gh release create "video-${{ inputs.pasta }}-${{ github.run_number }}" "$f" --title "video ${{ inputs.pasta }}" --notes "render simples"
