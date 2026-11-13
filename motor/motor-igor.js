@@ -131,7 +131,7 @@ const audio = mkAudio(AUD + 'narracao.mp3', 'metadata');
 const musica = mkAudio(AUD + 'musica.mp3', 'none'); let musOn = true;
 const sfx = mkAudio(AUD + 'sfx.mp3', 'none'); let sfxOn = true;
 let legOn = false;
-const TOTAL = +(FR[FR.length - 1].fim + 5.5).toFixed(2);   // respiro final: gatinho + escurecimento + fade da música
+const TOTAL = +(FR[FR.length - 1].fim + (window.FIM_EXTRA || 5.5)).toFixed(2);   // respiro final: gatinho + escurecimento + fade da música
 
 let clock = 0, playing = false, curB = -1, btl = null, lastNow = performance.now(), rate = 1, speed = 1, arrastando = false;
 const lista = document.getElementById('lista'), scrub = document.getElementById('scrub'), tempo = document.getElementById('tempo'), bPlay = document.getElementById('bPlay'), capa = document.getElementById('capa');
