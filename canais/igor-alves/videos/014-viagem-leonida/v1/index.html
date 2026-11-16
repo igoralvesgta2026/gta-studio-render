@@ -3294,7 +3294,7 @@ B('B28_03', 'Ronda com a polícia de Miami', (tl, w) => {
 B('B29_01', 'A foto do morro', (tl, w) => {
   foto(tl, 'Jason_and_Lucia_16', 0, 99, { z: [1.0, 1.18], x: -3 });
   pilula(tl, w('caminhonete'), 'JASON E LUCIA NA CAMINHONETE', { x: 960, y: 900, size: 46, cor: 'branco', cheia: true });
-  lupa(tl, w('cervos'), { x: 470, y: 900, r: 90, rotulo: 'CERVOS', lx: 300, ly: 700, cor: 'ciano' });
+  pilula(tl, w('cervos'), 'CERVOS', { x: 1380, y: 700, size: 44, cor: 'ciano', cheia: true });
 });
 B('B29_02', 'Onde fica?', (tl, w) => {
   foto(tl, 'Jason_and_Lucia_16', 0, 99, { z: [1.18, 1.3], x: -3 });
@@ -3499,7 +3499,7 @@ B('B44_01', 'A parada que eu prometi', (tl, w) => {
 B('B44_02', 'A caixa de colecionador', (tl, w) => {
   palco(tl, 0, 99, { grade: true });
   tituloPalco(tl, .1, 'A CAIXA DE COLECIONADOR', { y: 300, size: 96, sub: 'SETEMBRO · QUASE US$ 400' });
-  pilula(tl, T('B44_03'), 'NO VERSO DO PÔSTER: O MAPA INTEIRO DE LEÔNIDA', { x: 960, y: 640, size: 50, cor: 'poente', cheia: true, icone: 'pino' });
+  polaroid(tl, T('B44_03') - .1, { img: 'memes/poster_mapa.jpg', legenda: 'Frente: Vice City · Verso: o mapa de Leônida', x: 600, y: 380, w: 720, rot: 3 });
 });
 B('B44_04', 'Zoom na foto da loja', (tl, w) => {
   mapaViagem(tl, 0, { de: 'canion', zoom: [.75, 1.35], foco: [420, 960], rotaToda: true, ent: false,
@@ -3515,9 +3515,10 @@ B('B45_01', 'Trocaram a imagem', (tl, w) => {
   carimbo(tl, T('B45_03'), 'NOMES APAGADOS', { cor: 'verm', x: 960, y: 560, size: 96, rot: 4 });
 });
 B('B46_01', 'Caixa na Inglaterra', (tl, w) => {
-  foto(tl, 'Jason_and_Lucia_01', 0, 99, { z: [1.1, 1.2] });
-  pilula(tl, w('Inglaterra,'), 'A CAIXA APARECEU NUMA LOJA NA INGLATERRA', { x: 960, y: 880, size: 46, cor: 'branco', cheia: true });
-  carimbo(tl, w('vazaram.') - .3, 'PÔSTER VAZOU', { cor: 'poente', x: 960, y: 540, size: 80, rot: -4 });
+  foto(tl, 'Jason_and_Lucia_01', 0, 99, { z: [1.1, 1.2], filtro: 'blur(6px) brightness(.55)' });
+  polaroid(tl, .2, { img: 'memes/poster_mapa.jpg', legenda: 'O pôster da caixa de colecionador', x: 560, y: 90, w: 800, rot: -3 });
+  pilula(tl, w('Inglaterra,'), 'A CAIXA APARECEU NUMA LOJA NA INGLATERRA', { x: 960, y: 960, size: 44, cor: 'branco', cheia: true });
+  carimbo(tl, w('vazaram.') - .3, 'PÔSTER VAZOU', { cor: 'poente', x: 1500, y: 300, size: 76, rot: -6 });
 });
 B('B46_02', 'Draw = ilha industrial', (tl, w) => {
   mapaViagem(tl, 0, { de: 'canion', zoom: [1.3, 1.6], foco: [560, 980], rotaToda: true, pinos: [{ k: 'draw', txt: 'DRAW = ILHA INDUSTRIAL?', t: w('Draw'), cor: 'poente' }] });
@@ -3586,7 +3587,7 @@ BEATS[0].de = 0;
 liga();
 </script>
 <!--TL-OURO-->
-<script>window.TL_DADOS="tl-dados.8a3febc1bd.js";</script>
+<script>window.TL_DADOS="tl-dados.8d188831e5.js";</script>
 <script src="../../../../../motor/timeline-ouro.js"></script>
 <script src="../../../../../motor/player-ouro.js"></script>
 <script src="../../../../../motor/render-ui.js" defer></script>
