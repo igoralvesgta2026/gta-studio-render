@@ -45,7 +45,7 @@ jobs:
           for t in 1 2 3; do timeout 240 sudo apt-get update -qq && timeout 300 sudo apt-get install -y -qq ffmpeg > /dev/null && break; echo "apt tentativa $t falhou"; [ $t = 3 ] && exit 1; done
           google-chrome --version
       - name: Mídia
-        run: gh release download "${{ inputs.midia }}" -p midia.zip && unzip -q midia.zip && rm midia.zip
+        run: gh release download "${{ inputs.midia }}" -p "midia*.zip" && for z in midia*.zip; do unzip -q -o "$z" && rm "$z"; done
       - name: Planeja as partes
         id: p
         run: |
@@ -74,7 +74,7 @@ jobs:
           pip install --quiet playwright
           for t in 1 2 3; do timeout 240 sudo apt-get update -qq && timeout 300 sudo apt-get install -y -qq ffmpeg > /dev/null && break; echo "apt tentativa $t falhou"; [ $t = 3 ] && exit 1; done
       - name: Mídia
-        run: gh release download "${{ inputs.midia }}" -p midia.zip && unzip -q midia.zip && rm midia.zip
+        run: gh release download "${{ inputs.midia }}" -p "midia*.zip" && for z in midia*.zip; do unzip -q -o "$z" && rm "$z"; done
       - name: Renderiza a parte ${{ matrix.parte.i }} (quadros ${{ matrix.parte.f0 }}–${{ matrix.parte.f1 }})
         env:
           RENDER_CRF: ${{ inputs.crf }}
@@ -103,7 +103,7 @@ jobs:
           pip install --quiet playwright
           for t in 1 2 3; do timeout 240 sudo apt-get update -qq && timeout 300 sudo apt-get install -y -qq ffmpeg > /dev/null && break; echo "apt tentativa $t falhou"; [ $t = 3 ] && exit 1; done
       - name: Mídia (áudios)
-        run: gh release download "${{ inputs.midia }}" -p midia.zip && unzip -q midia.zip && rm midia.zip
+        run: gh release download "${{ inputs.midia }}" -p "midia*.zip" && for z in midia*.zip; do unzip -q -o "$z" && rm "$z"; done
       - name: Baixa as partes
         run: gh release download "$TMP_TAG" -p "p*.mp4" -D partes && ls -la partes
       - name: Junta + áudio
