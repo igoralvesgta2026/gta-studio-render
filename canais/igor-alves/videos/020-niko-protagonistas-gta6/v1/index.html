@@ -3284,7 +3284,7 @@ function SUBT(tl, t, txt, { ate = 999, quem } = {}) {
 const FALA = (tl, src, quem, txt) => { V(tl, src, 0, { z: [1.0, 1.04] }); SUBT(tl, .15, txt, { quem }); selo(tl, .1, 'ÁUDIO ORIGINAL', 'GTA 6', { canto: 'se', tipo: 'confirmado' }); };
 
 /* ================= ABERTURA ================= */
-B('B01_01', 'gancho: 18 anos depois', (tl, w) => { S(tl, [['g4_navio.mp4', 0, 4], ['n_niko_chega.mp4', w('Rockstar') - .2, 0]]); ITEM(tl, w('Dezoito') - .05, '18 ANOS DEPOIS', { cor: 'poente', icone: 'relogio', ate: w('fez') }); });
+B('B01_01', 'gancho: 18 anos depois', (tl, w) => { S(tl, [['n_entrada.mp4', 0, 2], ['n_niko_chega.mp4', w('Rockstar') - .2, 0]]); ITEM(tl, w('Dezoito') - .05, '18 ANOS DEPOIS', { cor: 'poente', icone: 'relogio', ate: w('fez') }); });
 B('B01_02', 'o Niko voltou', (tl, w) => { V(tl, 'n_niko_fala.mp4', 2); carimbo(tl, w('voltou') - .1, 'O NIKO VOLTOU', { cor: 'azul' }); });
 B('B01_03', 'não foi piadinha', (tl, w) => { V(tl, 'r_estrada.mp4', 0); });
 B('B01_04', 'voz original, grisalho, pistola', (tl, w) => {
@@ -3385,7 +3385,7 @@ B('B18_03', 'vamos falar do Niko', (tl, w) => { V(tl, 'n_niko_chega.mp4', 3); IT
 
 /* ================= QUEM ERA O NIKO (GTA 4) ================= */
 B('B19_01', 'lembrar quem era o Niko', (tl, w) => { V(tl, 'g4_roman.mp4', 0); G4(tl, .1); });
-B('B19_02', 'navio de carga', (tl, w) => { V(tl, 'g4_navio.mp4', 0); ITEM(tl, w('navio') - .1, 'CHEGA NUM NAVIO DE CARGA', { icone: 'mapa' }); });
+B('B19_02', 'navio de carga', (tl, w) => { V(tl, 'g4_navio.mp4', 8); ITEM(tl, w('navio') - .1, 'CHEGA NUM NAVIO DE CARGA', { icone: 'mapa' }); });
 B('B19_03', 'Roman e o sonho americano', (tl, w) => { V(tl, 'g4_roman.mp4', 4); ITEM(tl, w('Roman') - .1, 'O PRIMO ROMAN', { ate: w('sonho') - .1 }); LEG(tl, w('sonho') - .1, 'O "SONHO AMERICANO"'); });
 B('B19_04', 'mansão, carro, mulher', (tl, w) => { V(tl, 'g4_carro.mp4', 0); ITEM(tl, w('Mansão') - .1, 'MANSÃO', { icone: 'casa', y: 380, ate: 99 }); ITEM(tl, w('carro') - .1, 'CARRO ESPORTIVO', { icone: 'carro', y: 500 }); ITEM(tl, w('dinheiro') - .1, 'DINHEIRO SOBRANDO', { icone: 'dinheiro', y: 620 }); });
 B('B19_05', 'era tudo mentira', (tl, w) => { V(tl, 'g4_carro.mp4', 10); carimbo(tl, w('mentira') - .1, 'MENTIRA', { cor: 'verm' }); });
@@ -3394,7 +3394,7 @@ B('B20_01', 'não veio atrás de dinheiro', (tl, w) => { V(tl, 'g4_roman.mp4', 3
 B('B20_02', 'veio atrás de um homem', (tl, w) => { cartela(tl, 0, ['ELE VEIO ATRÁS', 'DE UM HOMEM'], { tempos: [0, w('homem') - .2], size: 130 }); });
 B('B20_03', 'emboscada na guerra', (tl, w) => { V(tl, 'g4_cidade.mp4', 100); LEG(tl, w('emboscada') - .2, 'EMBOSCADA NA GUERRA'); });
 B('B20_04', 'alguém vendeu', (tl, w) => { V(tl, 'g4_roman.mp4', 38); carimbo(tl, w('vendido') - .2, 'TRAIÇÃO', { cor: 'verm' }); });
-B('B20_05', 'atravessou o oceano', (tl, w) => { V(tl, 'g4_navio.mp4', 14); });
+B('B20_05', 'atravessou o oceano', (tl, w) => { V(tl, 'g4_navio.mp4', 16); });
 B('B21_01', 'todo chefe usou ele', (tl, w) => { V(tl, 'g4_cidade.mp4', 8); });
 B('B21_02', 'agiota, mafioso, amigo', (tl, w) => { V(tl, 'g4_cidade.mp4', 40); ITEM(tl, w('Agiota') - .1, 'AGIOTA', { y: 380, ate: 99 }); ITEM(tl, w('mafioso') - .1, 'MAFIOSO RUSSO', { y: 500 }); ITEM(tl, w('amigo') - .1, 'O PRÓPRIO AMIGO', { y: 620, cor: 'verm' }); });
 B('B21_03', 'queria vida diferente', (tl, w) => { V(tl, 'g4_cidade.mp4', 70); LEG(tl, w('diferente') - .2, '"QUERIA UMA VIDA DIFERENTE"'); });
@@ -3418,7 +3418,7 @@ B('B24_01', 'a comunidade se dividiu', (tl, w) => {
     { rotulo: 'VOLTOU PRA EUROPA?', icone: 'mapa', t: Math.max(1, w('Europa') - .4) },
     { rotulo: 'A ROCKSTAR NUNCA MAIS USA', icone: 'interrog', t: Math.max(1.5, w('mexer') - .4) }] });
 });
-B('B24_05', 'a aposta geral', (tl, w) => { V(tl, 'g4_navio.mp4', 20); });
+B('B24_05', 'a aposta geral', (tl, w) => { V(tl, 'g4_carro.mp4', 30); });
 B('B24_06', 'Niko não volta nunca mais', (tl, w) => { cartela(tl, 0, ['O NIKO NÃO VOLTA', 'NUNCA MAIS'], { tempos: [0, w('nunca') - .1], size: 130 }); });
 B('B25_01', 'mais um medo', (tl, w) => { V(tl, 'g5_johnny.mp4', 0); });
 B('B25_02', 'o Johnny', (tl, w) => { V(tl, 'g5_johnny.mp4', 4); G5(tl, .1, 'O JOHNNY DO GTA 4'); });
@@ -3446,7 +3446,7 @@ B('B29_01', 'a porta abre', (tl, w) => { V(tl, 'n_entrada.mp4', 4); });
 B('PZ_porta', 'ÁUDIO ORIGINAL · a entrada do Niko', (tl, w) => { V(tl, 'n_niko_chega.mp4', 0, { z: [1.0, 1.1] }); selo(tl, .1, 'ÁUDIO ORIGINAL', 'TEMA DO GTA 4 TOCANDO', { canto: 'se', tipo: 'confirmado' }); SUBT(tl, 3.5, 'Quanto tempo, Giorgio.', { quem: 'NIKO' }); });
 B('B30_01', 'grisalho, barba, terno, pistola', (tl, w) => { S(tl, [['n_niko_fala.mp4', 0, 10], ['n_pistola.mp4', w('pistola') - .2, 0]]); });
 B('B30_02', 'a música tema do GTA 4', (tl, w) => { V(tl, 'n_niko_fala.mp4', 16); ITEM(tl, w('música') - .1, '🎵 TEMA DO GTA 4', { cor: 'poente' }); });
-B('B30_04', 'anunciar do jeito mais nostálgico', (tl, w) => { V(tl, 'g4_navio.mp4', 26); });
+B('B30_04', 'anunciar do jeito mais nostálgico', (tl, w) => { V(tl, 'g4_navio.mp4', 8.5); });
 B('B31_01', 'como a cena é montada', (tl, w) => { V(tl, 'n_niko_fala.mp4', 22); });
 B('B31_02', 'créditos: o matador', (tl, w) => { V(tl, 'n_niko_fala.mp4', 26); ITEM(tl, w('matador') - .2, 'NOS CRÉDITOS: "THE HITMAN"', { icone: 'doc' }); });
 B('B31_04', 'a voz é dele', (tl, w) => { V(tl, 'n_giorgio.mp4', 0); ITEM(tl, w('ator') - .1, 'MESMO ATOR DO GTA 4', { icone: 'fala', cor: 'ciano' }); });
